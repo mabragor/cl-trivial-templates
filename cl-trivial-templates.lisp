@@ -4,28 +4,74 @@
 
 (cl-interpol:enable-interpol-syntax)
 
-(defun append-to-template (template key &rest what)
+;; *INDENT-TYPE* can also be :NONE and :SMART-NEWLINE
+(defvar *indent-style* :simple-newline)
+
+(defun crunch-in-indent (indent str)
+  (format nil #?"~{~a~^~%$(indent)~}" (cl-ppcre:split "\\n" str)))
+
+(defun %%append-to-template (template key what)
+  (let ((place-string #?"###$((string-downcase key))###"))
+    (cond ((eq :simple-newline *indent-style*)
+	   (cl-ppcre:regex-replace place-string template #?"$(what)\n$(place-string)"))
+	  ((eq :smart-newline *indent-style*)
+	   (cl-ppcre:regex-replace #?"( *)$(place-string)" template
+				   (lambda (match indent)
+				     (declare (ignore match))
+				     #?"$(indent)$((crunch-in-indent indent what))\n$(indent)$(place-string)")
+				   :simple-calls t))
+	  (t (cl-ppcre:regex-replace place-string template #?"$(what)$(place-string)")))))
+
+(defun %append-to-template (template key what)
   (if (not what)
       template
-      (apply #'append-to-template
-	     `(,(let ((place-string #?"###$((string-downcase key))###"))
-		     (cl-ppcre:regex-replace place-string template #?"$((car what))\n$(place-string)"))
-		,key ,@(cdr what)))))
+      (%append-to-template (%%append-to-template template key (car what)) key (cdr what))))
+
+(defun append-to-template (template key &rest what)
+  (%append-to-template template key what))
+
+
+(defun %%prepend-to-template (template key what)
+  (let ((place-string #?"###$((string-downcase key))###"))
+    (cond ((eq :simple-newline *indent-style*)
+	   (cl-ppcre:regex-replace place-string template #?"$(place-string)\n$((car what))"))
+	  ((eq :smart-newline *indent-style*)
+	   (cl-ppcre:regex-replace
+	    #?"( *)$(place-string)" template
+	    (lambda (match indent)
+	      (declare (ignore match))
+	      #?"$(indent)$(place-string)\n$(indent)$((crunch-in-indent indent what))")
+	    :simple-calls t))
+	  (t (cl-ppcre:regex-replace place-string template #?"$(place-string)$((car what))")))))
+
+(defun %prepend-to-template (template key what)
+  (if (not what)
+      template
+      (%prepend-to-template (%%prepend-to-template template key (car what)) key (cdr what))))
 
 (defun prepend-to-template (template key &rest what)
-  (if (not what)
-      template
-      (apply #'prepend-to-template
-	     `(,(let ((place-string #?"###$((string-downcase key))###"))
-		     (cl-ppcre:regex-replace place-string template #?"$(place-string)\n$((car what))"))
-		,key ,@(cdr what)))))
+  (%prepend-to-template template key what))
 
 (defun replace-in-template (template key what)
   (let ((place-string #?"###$((string-downcase key))###"))
-    (cl-ppcre:regex-replace place-string template #?"$(what)")))
+    (cond ((eq :smart-newline *indent-style*)
+	   (cl-ppcre:regex-replace
+	    #?"( *)$(place-string)" template
+	    (lambda (match indent)
+	      (declare (ignore match))
+	      #?"$(indent)$((crunch-in-indent indent what))")
+	    :simple-calls t))
+	  (t (cl-ppcre:regex-replace place-string template #?"$(what)")))))
 (defun replace-all-in-template (template key what)
   (let ((place-string #?"###$((string-downcase key))###"))
-    (cl-ppcre:regex-replace-all place-string template #?"$(what)")))
+    (cond ((eq :smart-newline *indent-style*)
+	   (cl-ppcre:regex-replace-all
+	    #?"( *)$(place-string)" template
+	    (lambda (match indent)
+	      (declare (ignore match))
+	      #?"$(indent)$((crunch-in-indent indent what))")
+	    :simple-calls t))
+	  (t (cl-ppcre:regex-replace-all place-string template #?"$(what)")))))
 
 (defparameter *template-defaults* (make-hash-table))
 

@@ -6,4 +6,4 @@
 	   #:*template-defaults* #:finalize-template #:finalize-template!
 	   #:t-> #:t<- #:t<> #:t<<>> #:tt-> #:tt<- #:tt<> #:tt<<>>
 	   #:ttt-> #:ttt<- #:ttt<> #:ttt<<>>
-	   #:define-template-modifier #:template #:define-template-modifier!))
+	   #:define-template-modifier #:template #:define-template-modifier! #:*indent-style*))

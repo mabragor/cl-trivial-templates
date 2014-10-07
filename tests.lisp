@@ -22,9 +22,39 @@
 (define-template-modifier frob (x)
   (ttt-> :whatever (string-downcase x)))
 
+(defun smart-indents ()
+  (let ((template
+"if (###test###) {
+    ###then###
+} else {
+    ###else###
+}")
+	(*indent-style* :smart-newline))
+    (declare (special template))
+    (ttt-> :then #?"a;\nb;\nc;")
+    (ttt<- :else #?"d;\ne;\nf;")
+    (ttt<> :test #?"1 == 2")))
+    
+
 (test simple
   (is (equal `(,#?"a\n" ,#?"b\n" #?"c\n") (let ((template "###whatever###"))
 					    (declare (special template))
 					    (iter (for x in '(a b c))
-						  (collect (finalize-template (frob x))))))))
+						  (collect (finalize-template (frob x)))))))
+  (is (equal '("a" "b" "c") (let ((template "###whatever###")
+				  (*indent-style* :none))
+			      (declare (special template))
+			      (iter (for x in '(a b c))
+				    (collect (finalize-template (frob x)))))))
+  (is (equal "if (1 == 2) {
+    a;
+    b;
+    c;
+    ###then###
+} else {
+    ###else###
+    d;
+    e;
+    f;
+}" (smart-indents))))
 
