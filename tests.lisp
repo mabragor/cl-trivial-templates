@@ -34,7 +34,13 @@
     (ttt-> :then #?"a;\nb;\nc;")
     (ttt<- :else #?"d;\ne;\nf;")
     (ttt<> :test #?"1 == 2")))
-    
+
+(defun smart-butlast-indents ()
+  (let ((template "  ###whatever###")
+	(*indent-style* :smart-butlast-newline))
+    (declare (special template))
+    (ttt-> :whatever #?"a;\nb;\nc;")))
+
 
 (test simple
   (is (equal `(,#?"a\n" ,#?"b\n" #?"c\n") (let ((template "###whatever###"))
@@ -56,5 +62,8 @@
     d;
     e;
     f;
-}" (smart-indents))))
+}" (smart-indents)))
+  (is (equal "  a;
+  b;
+  c;###whatever###" (smart-butlast-indents))))
 
